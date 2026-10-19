@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HemFix – Home Services Marketplace</title>
+<link rel="stylesheet" href="style.css"></head><body>
+<header>
+<span class="logo">🏠 HemFix</span>
+<select id="reg"></select><select id="city"></select>
+<input id="q" type="search" autocomplete="off" list="sug">
+<datalist id="sug"></datalist>
+<select id="lang"><option value="en">English</option><option value="sv">Svenska</option><option value="ne">नेपाली</option><option value="hi">हिंदी</option><option value="ar">العربية</option></select>
+<button class="btn o" id="role"></button>
+<button class="btn" id="cartb">🛒<span class="badge" id="cnt">0</span></button>
+</header>
+<main id="app"></main>
+<aside class="drawer" id="drawer"></aside>
+<div class="ov" id="ov"><div class="modal" id="modal"></div></div>
+<script src="data.js"></script>
+<script src="app.js"></script></body></html>
