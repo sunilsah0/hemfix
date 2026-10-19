@@ -1,5 +1,4 @@
-const S={lang:'en',reg:'SE',city:0,role:'c',cat:-1,q:'',cart:{},prem:false,subs:false,rut:false,jobs:[
- {id:'D1',demo:1,t:'Electrician visit',loc:'Kungsgatan 12, Stockholm',pay:980,st:0},{id:'D2',demo:1,t:'Full home cleaning',loc:'Storgatan 5, Uppsala',pay:1190,st:0}],earn:0,n:100};
+const S={lang:'en',reg:'SE',city:0,role:'c',cat:-1,q:'',cart:{},prem:false,subs:false,rut:false,jobs:[],earn:0,user:null,isPartner:false,hide:[]};
 const $=s=>document.querySelector(s),t=k=>T[S.lang][k],esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const nm=s=>S.lang==='sv'?s[4]:s[3];
 const fmt=n=>new Intl.NumberFormat(S.lang+'-u-nu-latn',{style:'currency',currency:R[S.reg].cur,maximumFractionDigits:R[S.reg].cur==='SEK'?0:2}).format(n);
@@ -10,7 +9,7 @@ function calc(){const r=R[S.reg];let sub=0,el=0;for(const id in S.cart){const s=
 /* ===== Rendering ===== */
 function head(){$('#reg').innerHTML=Object.entries(R).map(([k,v])=>`<option value="${k}" ${k==S.reg?'selected':''}>${v.n} (${v.cur})</option>`).join('');
  $('#city').innerHTML=R[S.reg].cities.map((c,i)=>`<option value="${i}" ${i==S.city?'selected':''}>${c}</option>`).join('');
- $('#q').placeholder=t('ph');$('#role').textContent=S.role=='c'?'👤 '+t('cus'):'🧰 '+t('pro');
+ $('#q').placeholder=t('ph');$('#auth').textContent=S.user?'Log out ('+S.user.email.split('@')[0]+')':'Log in';$('#role').textContent=S.role=='c'?'👤 '+t('cus'):'🧰 '+t('pro');
  $('#cnt').textContent=Object.values(S.cart).reduce((a,b)=>a+b,0);
  $('#sug').innerHTML=SV.map(s=>`<option value="${esc(nm(s))}">`).join('')}
 function grid(){const q=S.q.toLowerCase();$('#grid').innerHTML=SV.filter(s=>(S.cat<0||s[1]==S.cat)&&(nm(s)+s[3]).toLowerCase().includes(q)).map(s=>`
@@ -23,14 +22,21 @@ function app(){head();const sv=S.role=='c';$('#app').innerHTML=sv?`
  if(sv){grid();track()}else dash();cartUI()}
 function track(){const mine=S.jobs.filter(j=>j.mine);$('#trk').innerHTML=mine.length?mine.map(j=>`<div class="sec"><div class="row"><b>#${j.id} · ${esc(j.t)}</b><span>${fmt(j.pay)}</span></div>
 <div class="steps">${t('st').map((_,i)=>`<i class="${i<=j.st?'d':''}"></i>`).join('')}</div><div><b>${t('st')[j.st]}</b>${j.rej?` <span class="mut">${t('reass')}</span>`:''}</div>
-<div class="mut">${esc(j.loc)} · ${esc(j.slot||'')}</div>${j.st<4?`<button class="btn o" style="margin-top:8px" onclick="adv('${j.id}')">▶ ${t('go')[j.st]} (demo)</button>`:''}</div>`).join(''):`<p class="mut">${t('none')}</p>`}
-function dash(){const done=S.jobs.filter(j=>j.st==4).length;$('#dash').innerHTML=`<div class="sec stat"><div><b>${fmt(S.earn)}</b>${t('earn')}</div><div><b>${done}</b>${t('done')}</div><div><b>${S.jobs.length-done}</b>${t('open')}</div></div>
-<h3>${t('jobs')}</h3>`+S.jobs.map(j=>`<div class="sec"><div class="row"><b>${esc(j.t)}</b><span>${fmt(j.pay*.85)}</span></div><div class="mut">📍 ${esc(j.loc)}</div>
+<div class="mut">${esc(j.loc)} · ${esc(j.slot||'')}</div></div>`).join(''):`<p class="mut">${t('none')}</p>`}
+function dash(){const pj=S.jobs.filter(j=>j.st==0||j.partner===(S.user&&S.user.id));const done=pj.filter(j=>j.st==4).length;$('#dash').innerHTML=`<div class="sec stat"><div><b>${fmt(S.earn)}</b>${t('earn')}</div><div><b>${done}</b>${t('done')}</div><div><b>${pj.length-done}</b>${t('open')}</div></div>
+<h3>${t('jobs')}</h3>`+pj.map(j=>`<div class="sec"><div class="row"><b>${esc(j.t)}</b><span>${fmt(j.pay*.85)}</span></div><div class="mut">📍 ${esc(j.loc)}</div>
 <div class="steps">${t('st').map((_,i)=>`<i class="${i<=j.st?'d':''}"></i>`).join('')}</div><b>${t('st')[j.st]}</b>
 <div style="margin-top:8px">${j.st==0?`<button class="btn" onclick="adv('${j.id}')">${t('acc')}</button> <button class="btn o" onclick="rej('${j.id}')">${t('rej')}</button>`:j.st<4?`<button class="btn" onclick="adv('${j.id}')">${t('go')[j.st]}</button>`:'✅'}</div></div>`).join('')}
 /* ===== Order state machine: 0 Confirmed → 1 Assigned → 2 In transit → 3 In progress → 4 Completed ===== */
-function adv(id){const j=S.jobs.find(x=>x.id==id);if(j.st>=4)return;j.rej=0;j.st++;if(j.st==4)S.earn+=j.pay*.85;app()}
-function rej(id){const j=S.jobs.find(x=>x.id==id);j.rej=1;S.jobs=S.jobs.filter(x=>x.id!=id||x.mine);app()}
+async function adv(id){const j=S.jobs.find(x=>x.id==id);if(!j||j.st>=4)return;
+ const patch=j.st==0?{status:1,partner_id:S.user.id}:{status:j.st+1};
+ const {error}=await sb.from('orders').update(patch).eq('id',id);if(error)return alert(error.message);await load()}
+function rej(id){S.hide.push(String(id));S.jobs=S.jobs.filter(x=>x.id!=id);app()}
+/* ===== Load orders from the database (RLS decides which rows you may see) ===== */
+async function load(){if(!S.user){S.jobs=[];S.earn=0;return app()}
+ const {data,error}=await sb.from('orders').select('*').order('created_at',{ascending:false});if(error){alert(error.message);return}
+ S.jobs=data.filter(o=>!S.hide.includes(String(o.id))).map(o=>({id:o.id,mine:o.customer_id===S.user.id,partner:o.partner_id,t:o.title,loc:`${o.address}, ${o.postal} ${o.city}`,slot:`${o.slot} · ${o.pay_method}`,pay:Number(o.subtotal),st:o.status}));
+ S.earn=S.jobs.filter(j=>j.st==4&&j.partner===S.user.id).reduce((s,j)=>s+j.pay*.85,0);app()}
 function add(id){S.cart[id]=(S.cart[id]||0)+1;cartUI();$('#drawer').classList.add('on')}
 function cartUI(){head();const ids=Object.keys(S.cart),c=calc(),d=$('#drawer');
 d.innerHTML=`<div class="row"><h3>${t('cart')}</h3><button class="btn o" onclick="$('#drawer').classList.remove('on')">✕</button></div>`+(ids.length?ids.map(id=>{const s=SV.find(x=>x[0]==id);return`<div class="row" style="margin:8px 0"><span>${s[2]} ${nm(s)}</span><span><button class="btn o" onclick="qty(${id},-1)">−</button> ${S.cart[id]} <button class="btn o" onclick="qty(${id},1)">+</button></span></div>`}).join('')+`
@@ -48,23 +54,37 @@ function detail(id){const s=SV.find(x=>x[0]==id);modal(`<div class="row"><h2>${s
 <h4>${t('faq')}</h4><div><b>${t('f1')}</b><br>${t('a1')}<br><b>${t('f2')}</b><br>${t('a2')}</div><h4>${t('rev')}</h4><div>★★★★★ “Punctual and tidy.” <span class="mut">Anna, ${R[S.reg].cities[0]}</span><br>★★★★☆ “Great value.” <span class="mut">Omar</span></div>
 <button class="btn" style="margin-top:12px" onclick="add(${id});close()">${t('add')}</button>`)}
 let slot='';
-function checkout(){if(!Object.keys(S.cart).length)return;const tm=new Date(Date.now()+864e5).toISOString().slice(0,10),sl=['08:00','10:00','12:00','14:00','16:00','18:00'];slot=sl[1];
+function checkout(){if(!Object.keys(S.cart).length)return;if(!S.user)return authModal();const tm=new Date(Date.now()+864e5).toISOString().slice(0,10),sl=['08:00','10:00','12:00','14:00','16:00','18:00'];slot=sl[1];
  modal(`<div class="row"><h3>${t('chk')}</h3><button class="btn o" onclick="close()">✕</button></div>
 <label class="f">${t('date')}</label><input type="date" id="dt" value="${tm}" min="${tm}"><label class="f">${t('time')}</label>
 <div class="slots">${sl.map(x=>`<button class="${x==slot?'on':''}" onclick="slot='${x}';document.querySelectorAll('.slots button').forEach(b=>b.classList.toggle('on',b.textContent=='${x}'))">${x}</button>`).join('')}</div>
 <label class="f">${t('addr')}</label><input id="ad" style="width:100%"><label class="f">${t('zip')}</label><input id="zp" style="width:100%"><div class="err" id="ze"></div>
 <label class="f">${t('pay')}</label><div class="pays">${S.reg=='SE'?'<label><input type="radio" name="p" value="Swish" checked> Swish</label>':''}<label><input type="radio" name="p" value="Klarna" ${S.reg!='SE'?'checked':''}> Klarna (Pay Later / 3x)</label><label><input type="radio" name="p" value="Card"> 💳 Card</label></div>
 <div class="row tot"><span>${t('tot')}</span><span>${fmt(calc().tot)}</span></div><button class="btn" style="width:100%;margin-top:10px" onclick="place()">${t('place')}</button>`)}
-function place(){const z=$('#zp').value.trim(),a=$('#ad').value.trim();$('#ze').textContent='';
+async function place(){const z=$('#zp').value.trim(),a=$('#ad').value.trim();$('#ze').textContent='';
  if(!R[S.reg].zip.test(z)){$('#ze').textContent=t('bad');return}if(!a){$('#ad').focus();return}
- const c=calc(),names=Object.keys(S.cart).map(id=>nm(SV.find(x=>x[0]==id))).join(', ');
- S.jobs.unshift({id:'O'+(++S.n),mine:1,t:names,loc:`${a}, ${z} ${R[S.reg].cities[S.city]}`,slot:$('#dt').value+' '+slot+' · '+document.querySelector('[name=p]:checked').value,pay:c.sub-c.rut,st:0});
- S.cart={};close();$('#drawer').classList.remove('on');app()}
+ const c=calc(),names=Object.keys(S.cart).map(id=>nm(SV.find(x=>x[0]==id))).join(', '),r2=x=>Math.round(x*100)/100;
+ const {error}=await sb.from('orders').insert({title:names,address:a,postal:z,city:R[S.reg].cities[S.city],region:S.reg,slot:$('#dt').value+' '+slot,pay_method:document.querySelector('[name=p]:checked').value,currency:R[S.reg].cur,subtotal:r2(c.sub-c.rut),total:r2(c.tot)});
+ if(error)return alert(error.message);
+ S.cart={};close();$('#drawer').classList.remove('on');await load()}
+/* ===== Login / sign up ===== */
+function authModal(){modal(`<div class="row"><h3>Log in / Sign up</h3><button class="btn o" onclick="close()">✕</button></div>
+<label class="f">Email</label><input id="em" type="email" style="width:100%"><label class="f">Password (min 6 characters)</label><input id="pw" type="password" style="width:100%"><div class="err" id="ae"></div>
+<div style="margin-top:10px"><button class="btn" onclick="signIn()">Log in</button> <button class="btn o" onclick="signUp()">Sign up</button></div>`)}
+async function signIn(){const {error}=await sb.auth.signInWithPassword({email:$('#em').value.trim(),password:$('#pw').value});if(error)$('#ae').textContent=error.message;else close()}
+async function signUp(){const {data,error}=await sb.auth.signUp({email:$('#em').value.trim(),password:$('#pw').value});if(error)$('#ae').textContent=error.message;else if(!data.session)$('#ae').textContent='Check your email to confirm, then log in.';else close()}
+/* Runs on page load, login and logout. setTimeout avoids a known supabase-js deadlock. */
+sb.auth.onAuthStateChange((_e,session)=>{S.user=session?session.user:null;S.isPartner=false;
+ setTimeout(async()=>{if(S.user){const {data}=await sb.from('profiles').select('role').maybeSingle();S.isPartner=!!data&&data.role==='partner'}
+  if(!S.isPartner)S.role='c';await load()},0)});
+/* Live tracking: reload when any visible order changes */
+sb.channel('orders-live').on('postgres_changes',{event:'*',schema:'public',table:'orders'},()=>load()).subscribe();
 /* ===== Events: language (+RTL), region, city, role, search, cart ===== */
 $('#lang').onchange=e=>{S.lang=e.target.value;document.documentElement.lang=S.lang;document.documentElement.dir=S.lang=='ar'?'rtl':'ltr';app()};
 $('#reg').onchange=e=>{S.reg=e.target.value;S.city=0;if(S.reg!='SE')S.rut=false;app()};
 $('#city').onchange=e=>{S.city=+e.target.value;app()};
-$('#role').onclick=()=>{S.role=S.role=='c'?'p':'c';app()};
+$('#role').onclick=()=>{if(S.role=='c'){if(!S.user)return authModal();if(!S.isPartner)return alert('Partner mode is for approved partners. The site owner approves accounts in Supabase.')}S.role=S.role=='c'?'p':'c';app()};
+$('#auth').onclick=()=>S.user?sb.auth.signOut():authModal();
 $('#q').oninput=e=>{S.q=e.target.value;if($('#grid'))grid()};
 $('#cartb').onclick=()=>$('#drawer').classList.toggle('on');
 app();
