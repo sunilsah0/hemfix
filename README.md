@@ -1,10 +1,6 @@
 # HemFix: Home Services Marketplace
 
 A free, Urban Company style marketplace for home services, built for Sweden and ready to grow across Europe. Customers book services, partners sell services and manage a team, and assigned workers share their live location. Everything runs on free tools, with no server to maintain.
-##
- **Link** 
- https://sunilsah0.github.io/hemfix/
-
 
 > **Status:** demo-ready. Payments (Swish, Klarna, card) are still simulated. See [Roadmap](#roadmap).
 
@@ -67,6 +63,10 @@ hemfix/
 ├── schema.sql        Database part 1: users, orders
 ├── schema_v2.sql     Database part 2: partners, services, team
 ├── schema_v3.sql     Database part 3: photos, reviews, workers, location
+├── schema_v4.sql     Database part 4: admin dashboard
+├── admin.html        Admin dashboard page (approve partners, no SQL)
+├── admin.js          Admin dashboard logic
+├── images/           Real photos (see images/README.md)
 └── README.md         This file
 ```
 
@@ -215,3 +215,50 @@ Press **F12 → Console** in the browser to see the exact error message.
 6. Move to React and Vite if the site grows larger.
 
 ---
+
+## 11. Admin dashboard (approve partners without SQL)
+
+1. Run `schema_v4.sql` once in the Supabase SQL Editor.
+2. Open `admin.html`, click **Create account**, and sign up.
+3. Make that account admin. Replace the email and run this one line in the SQL Editor (this is the only SQL you need from now on):
+   ```sql
+   insert into public.admins (user_id) select id from auth.users where email = 'you@example.com';
+   ```
+4. Reload `admin.html`. You can approve, suspend or delete partners, see all orders and totals, and delete bad reviews.
+
+## 12. Real photos
+
+Put photos in the `images/` folder using the file names listed in `images/README.md`. Missing files fall back to a colored card. Partners' own uploads are used automatically for their services.
+
+## 13. When to move to React and Vite
+
+Stay with this plain version while you have a handful of screens and one or two developers. Move when you feel these problems: files above about 800 lines, the same HTML repeated in many places, bugs from changing one screen and breaking another, or more people joining the project. A good next stack, all free to start: React, Vite, TypeScript, Tailwind CSS, React Router, TanStack Query, i18next (languages), Supabase JS, Stripe Checkout, and hosting on Cloudflare Pages, Vercel or GitHub Pages. Everything in the database stays the same, so moving is a rewrite of the screens only.
+
+---
+## # Service photos
+
+The site shows a photo for each service if a file with the exact name below exists in this folder.
+If a file is missing, a colored card with the service name is shown instead, so nothing breaks.
+
+Download free-license photos from unsplash.com, pexels.com or pixabay.com (free for commercial use; check the license on each photo page).
+Save as .jpg, about 800 x 600 px, under 150 KB (compress free at squoosh.app).
+
+| File name | Search for |
+|---|---|
+| hero.jpg (1600 x 900) | happy family living room, home service professional |
+| svc-1.jpg | haircut at home, hairdresser |
+| svc-2.jpg | manicure pedicure |
+| svc-3.jpg | home cleaning, cleaner living room |
+| svc-4.jpg | sofa cleaning, carpet cleaning |
+| svc-5.jpg | air conditioner repair technician |
+| svc-6.jpg | washing machine repair |
+| svc-7.jpg | plumber fixing sink |
+| svc-8.jpg | electrician fixing socket |
+| svc-9.jpg | handyman assembling furniture |
+| svc-10.jpg | painting room wall |
+| svc-11.jpg | massage therapy |
+| svc-12.jpg | ayurveda spa massage |
+| cat-0.jpg ... cat-5.jpg (600 x 400) | one photo per category: beauty, cleaning, appliance repair, plumber/electrician, handyman/painting, wellness |
+
+Services that partners add themselves use the photo the partner uploads.
+Do not use photos from random websites or paid stock sites without a license.
