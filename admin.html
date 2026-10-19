@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HemFix Admin</title>
+<link rel="stylesheet" href="style.css"></head><body>
+<header><span class="logo">🛡️ HemFix Admin</span>
+<button class="btn o" onclick="refresh()">Refresh</button>
+<button class="btn o" id="out" style="display:none" onclick="sb.auth.signOut()">Log out</button></header>
+<main id="app"></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="ui.js"></script>
+<script src="supabase.js"></script>
+<script src="admin.js"></script></body></html>

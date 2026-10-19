@@ -1,5 +1,6 @@
 const S={lang:'en',reg:'SE',city:0,role:'c',cat:-1,q:'',cart:{},prem:false,subs:false,rut:false,jobs:[],earn:0,user:null,isPartner:false,hide:[],rated:[],loc:{}};
 const $=s=>document.querySelector(s),t=k=>T[S.lang][k],esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pic=s=>s[11]||(s[0]<1000?`images/svc-${s[0]}.jpg`:'');
 const nm=s=>S.lang==='sv'?s[4]:s[3];
 const fmt=n=>new Intl.NumberFormat(S.lang+'-u-nu-latn',{style:'currency',currency:R[S.reg].cur,maximumFractionDigits:R[S.reg].cur==='SEK'?0:2}).format(n);
 const price=s=>s[5]*R[S.reg].f*(S.prem?1.2:1)*(S.subs?.9:1);
@@ -10,16 +11,16 @@ function calc(){const r=R[S.reg];let sub=0,el=0;for(const id in S.cart){const s=
 function head(){$('#reg').innerHTML=Object.entries(R).map(([k,v])=>`<option value="${k}" ${k==S.reg?'selected':''}>${v.n} (${v.cur})</option>`).join('');
  $('#city').innerHTML=R[S.reg].cities.map((c,i)=>`<option value="${i}" ${i==S.city?'selected':''}>${c}</option>`).join('');
  $('#q').placeholder=t('ph');$('#auth').textContent=S.user?'Log out ('+S.user.email.split('@')[0]+')':'Log in';$('#role').textContent='🧰 Partners';
- const n=Object.values(S.cart).reduce((a,b)=>a+b,0);$('#cnt').textContent=n;$('#cbar').style.display=n?'':'none';$('#cbar').textContent='🛒 '+n+' · '+fmt(calc().tot);
+ const n=Object.values(S.cart).reduce((a,b)=>a+b,0);$('#cnt').textContent=n;$('#cbar').style.display=n?'':'none';$('#cbar').textContent='Cart ('+n+') · '+fmt(calc().tot);
  $('#sug').innerHTML=SV.map(s=>`<option value="${esc(nm(s))}">`).join('')}
 function grid(){const q=S.q.toLowerCase();$('#grid').innerHTML=SV.filter(s=>(S.cat<0||s[1]==S.cat)&&(nm(s)+s[3]).toLowerCase().includes(q)).map(s=>`
-<div class="card"><div class="img" style="background:${s[11]?`center/cover url('${esc(s[11])}')`:`hsl(${s[1]*55+230} 70% 92%)`}" onclick="detail(${s[0]})">${s[11]?'':s[2]}</div><div class="cb"><b>${nm(s)}</b>
+<div class="card"><div class="img" style="--h:${s[1]*55+230}" onclick="detail(${s[0]})">${pic(s)?`<img src="${esc(pic(s))}" alt="${esc(nm(s))}" loading="lazy" onerror="this.remove()">`:''}<span class="ph">${esc(nm(s))}</span></div><div class="cb"><b>${nm(s)}</b>
 <div class="mut">★ ${s[7]} · ${s[6]} ${t('min')}</div><div class="row" style="margin-top:8px"><b>${fmt(price(s))}</b><button class="btn" onclick="add(${s[0]})">${t('add')}</button></div></div></div>`).join('')}
 function app(){head();const sv=S.role=='c';$('#app').innerHTML=sv?`
-<div class="hero"><h1>${t('hero')}</h1><div>${t('h2')} · ${R[S.reg].cities[S.city]}</div><div class="why">${t('w').map(x=>`<span>✔ ${x}</span>`).join('')}</div></div>
-<div class="chips"><span class="chip ${S.cat<0?'on':''}" onclick="S.cat=-1;app()">${t('all')}</span>${t('cats').map((c,i)=>`<span class="chip ${S.cat==i?'on':''}" onclick="S.cat=${i};app()">${c}</span>`).join('')}</div>
-<div class="grid" id="grid"></div><h2>${t('trk')}</h2><div id="trk"></div><h2>How it works</h2><div class="how"><div>1️⃣ Choose a service</div><div>2️⃣ Pick a time and pay</div><div>3️⃣ Track your pro live</div></div><div class="foot">© HemFix · <a href="partner.html">Partner portal</a> · <a href="worker.html">Worker app</a></div>`:`<h2>🧰 ${t('pro')}</h2><div id="dash"></div>`;
- if(sv){grid();track()}else dash();cartUI()}
+<div class="hero" style="--img:url('images/hero.jpg')"><h1>${t('hero')}</h1><div class="sub">${t('h2')} · ${R[S.reg].cities[S.city]}</div><a class="cta" href="#grid">Browse services</a><div class="why">${t('w').map(x=>`<span>✔ ${x}</span>`).join('')}</div></div>
+<div class="tiles"><div class="tile ${S.cat<0?'on':''}" style="--h:250" onclick="S.cat=-1;app()"><span>${t('all')}</span></div>${t('cats').map((c,i)=>`<div class="tile ${S.cat==i?'on':''}" style="--h:${i*55+230}" onclick="S.cat=${i};app()"><img src="images/cat-${i}.jpg" alt="" loading="lazy" onerror="this.remove()"><span>${c}</span></div>`).join('')}</div>
+<div class="grid" id="grid"></div><h2>${t('trk')}</h2><div id="trk"></div><h2>How it works</h2><div class="how"><div>1️⃣ Choose a service</div><div>2️⃣ Pick a time and pay</div><div>3️⃣ Track your pro live</div></div><h2>Questions</h2><details><summary>Is the price fixed?</summary>Yes. You see the final price, including fee and VAT, before you book.</details><details><summary>Are the professionals verified?</summary>Every partner is reviewed and approved by our team before their services appear.</details><details><summary>Can I see where my professional is?</summary>Yes. When your pro is on the way, a live map appears in your order tracker.</details><details><summary>How do I leave a review?</summary>After a job is completed, press Rate in your order list.</details><div id="rv"></div><footer class="foot"><div class="fgrid"><div><b>HemFix</b><a href="#grid">Services</a></div><div><b>For professionals</b><a href="partner.html">Partner portal</a><a href="worker.html">Worker app</a></div></div>© HemFix</footer>`:`<h2>🧰 ${t('pro')}</h2><div id="dash"></div>`;
+ if(sv){grid();track();showReviews()}else dash();cartUI()}
 function track(){const mine=S.jobs.filter(j=>j.mine);$('#trk').innerHTML=mine.length?mine.map(j=>`<div class="sec"><div class="row"><b>#${j.id} · ${esc(j.t)}</b><span>${fmt(j.pay)}</span></div>
 <div class="steps">${t('st').map((_,i)=>`<i class="${i<=j.st?'d':''}"></i>`).join('')}</div><div><b>${t('st')[j.st]}</b>${j.who?` <span class="mut">👤 ${esc(j.who)}</span>`:''}${j.rej?` <span class="mut">${t('reass')}</span>`:''}</div>
 <div class="mut">${esc(j.loc)} · ${esc(j.slot||'')}</div>${S.loc[j.id]&&j.st>1&&j.st<4?mapHtml(S.loc[j.id]):''}${j.st==4&&j.partner&&!S.rated.includes(j.id)?`<button class="btn o" style="margin-top:8px" onclick="rateModal(${j.id},'${j.partner}')">⭐ Rate</button>`:''}</div>`).join(''):`<p class="mut">${t('none')}</p>`}
@@ -41,7 +42,7 @@ async function load(){if(!S.user){S.jobs=[];S.earn=0;return app()}
  S.earn=S.jobs.filter(j=>j.st==4&&j.partner===S.user.id).reduce((s,j)=>s+j.pay*.85,0);app()}
 function add(id){S.cart[id]=(S.cart[id]||0)+1;cartUI();$('#drawer').classList.add('on')}
 function cartUI(){head();const ids=Object.keys(S.cart),c=calc(),d=$('#drawer');
-d.innerHTML=`<div class="row"><h3>${t('cart')}</h3><button class="btn o" onclick="$('#drawer').classList.remove('on')">✕</button></div>`+(ids.length?ids.map(id=>{const s=SV.find(x=>x[0]==id);return`<div class="row" style="margin:8px 0"><span>${s[2]} ${nm(s)}</span><span><button class="btn o" onclick="qty(${id},-1)">−</button> ${S.cart[id]} <button class="btn o" onclick="qty(${id},1)">+</button></span></div>`}).join('')+`
+d.innerHTML=`<div class="row"><h3>${t('cart')}</h3><button class="btn o" onclick="$('#drawer').classList.remove('on')">✕</button></div>`+(ids.length?ids.map(id=>{const s=SV.find(x=>x[0]==id);return`<div class="row" style="margin:8px 0"><span>${nm(s)}</span><span><button class="btn o" onclick="qty(${id},-1)">−</button> ${S.cart[id]} <button class="btn o" onclick="qty(${id},1)">+</button></span></div>`}).join('')+`
 <label><input type="checkbox" ${S.prem?'checked':''} onchange="S.prem=this.checked;app()"> ${t('prem')}</label><br><label><input type="checkbox" ${S.subs?'checked':''} onchange="S.subs=this.checked;app()"> ${t('subs')}</label>
 ${S.reg=='SE'?`<br><label><input type="checkbox" ${S.rut?'checked':''} onchange="S.rut=this.checked;app()"> ${t('rutq')}</label>`:''}
 <div style="margin-top:10px"><div class="row"><span>${t('sub')}</span><span>${fmt(c.sub)}</span></div>${c.rut?`<div class="row"><span>${t('rut')}</span><span>−${fmt(c.rut)}</span></div>`:''}
@@ -51,7 +52,7 @@ function qty(id,d){S.cart[id]+=d;if(S.cart[id]<1)delete S.cart[id];app()}
 /* ===== Modals ===== */
 const modal=h=>{$('#modal').innerHTML=h;$('#ov').classList.add('on')},close=()=>$('#ov').classList.remove('on');
 $('#ov').onclick=e=>{if(e.target.id=='ov')close()};
-function detail(id){const s=SV.find(x=>x[0]==id);modal(`${s[11]?`<img src="${esc(s[11])}" style="width:100%;border-radius:12px;margin-bottom:8px">`:''}<div class="row"><h2>${s[2]} ${nm(s)}</h2><button class="btn o" onclick="close()">✕</button></div>
+function detail(id){const s=SV.find(x=>x[0]==id);modal(`${pic(s)?`<img src="${esc(pic(s))}" onerror="this.remove()" style="width:100%;border-radius:12px;margin-bottom:8px;max-height:260px;object-fit:cover">`:''}<div class="row"><h2>${nm(s)}</h2><button class="btn o" onclick="close()">✕</button></div>
 <div class="mut">★ ${s[7]} · ${s[6]} ${t('min')} · ${fmt(price(s))}</div><h4>✔ ${t('inc')}</h4><div>${esc(s[9]||'Trained professional · Tools & materials · Cleanup')}</div>${s[10]?`<div class="mut">By <a href="#" onclick="partnerProfile('${s[12]}');return false">${esc(s[10])}</a></div>`:''}<h4>✘ ${t('exc')}</h4><div>Spare parts · Extra rooms</div>
 <h4>${t('faq')}</h4><div><b>${t('f1')}</b><br>${t('a1')}<br><b>${t('f2')}</b><br>${t('a2')}</div><h4>${t('rev')}</h4><div>★★★★★ “Punctual and tidy.” <span class="mut">Anna, ${R[S.reg].cities[0]}</span><br>★★★★☆ “Great value.” <span class="mut">Omar</span></div>
 <button class="btn" style="margin-top:12px" onclick="add(${id});close()">${t('add')}</button>`)}
@@ -110,3 +111,8 @@ async function partnerProfile(pid){const [p,r]=await Promise.all([sb.from('publi
  <div><div class="mut">📍 ${esc(P.city)}</div><div>${avg?`<b>★ ${avg}</b> <span class="mut">(${rv.length})</span>`:'<span class="mut">No reviews yet</span>'}</div></div></div>
  <p>${esc(P.about||'')}</p><h4>Services</h4>${SV.filter(s=>s[12]==pid).map(s=>`<div class="row" style="margin:4px 0"><span>${esc(nm(s))} · ${fmt(price(s))}</span><button class="btn o" onclick="add(${s[0]});close()">${t('add')}</button></div>`).join('')||'<span class="mut">-</span>'}
  <h4>${t('rev')}</h4>${rv.map(x=>`<div style="margin:6px 0"><span style="color:#f5a623">${'★'.repeat(x.rating)}${'☆'.repeat(5-x.rating)}</span> <b>${esc(x.author)}</b><div>${esc(x.comment||'')}</div></div>`).join('')||'<span class="mut">-</span>'}`)}
+
+/* ===== Real customer reviews on the home page (only shown when they exist) ===== */
+let topRv=null;
+async function showReviews(){if(topRv===null){const {data}=await sb.from('reviews').select('*').gte('rating',4).order('created_at',{ascending:false}).limit(3);topRv=data||[]}
+ const e=$('#rv');if(e&&topRv.length)e.innerHTML=`<h2>What customers say</h2><div class="how">${topRv.map(x=>`<div><div class="stars">${'★'.repeat(x.rating)}</div>${esc(x.comment||'')}<div class="mut">${esc(x.author)}</div></div>`).join('')}</div>`}
