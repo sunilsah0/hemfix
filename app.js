@@ -9,7 +9,7 @@ function calc(){const r=R[S.reg];let sub=0,el=0;for(const id in S.cart){const s=
 /* ===== Rendering ===== */
 function head(){$('#reg').innerHTML=Object.entries(R).map(([k,v])=>`<option value="${k}" ${k==S.reg?'selected':''}>${v.n} (${v.cur})</option>`).join('');
  $('#city').innerHTML=R[S.reg].cities.map((c,i)=>`<option value="${i}" ${i==S.city?'selected':''}>${c}</option>`).join('');
- $('#q').placeholder=t('ph');$('#auth').textContent=S.user?'Log out ('+S.user.email.split('@')[0]+')':'Log in';$('#role').textContent=S.role=='c'?'👤 '+t('cus'):'🧰 '+t('pro');
+ $('#q').placeholder=t('ph');$('#auth').textContent=S.user?'Log out ('+S.user.email.split('@')[0]+')':'Log in';$('#role').textContent='🧰 Partners';
  $('#cnt').textContent=Object.values(S.cart).reduce((a,b)=>a+b,0);
  $('#sug').innerHTML=SV.map(s=>`<option value="${esc(nm(s))}">`).join('')}
 function grid(){const q=S.q.toLowerCase();$('#grid').innerHTML=SV.filter(s=>(S.cat<0||s[1]==S.cat)&&(nm(s)+s[3]).toLowerCase().includes(q)).map(s=>`
@@ -21,7 +21,7 @@ function app(){head();const sv=S.role=='c';$('#app').innerHTML=sv?`
 <div class="grid" id="grid"></div><h2>${t('trk')}</h2><div id="trk"></div>`:`<h2>🧰 ${t('pro')}</h2><div id="dash"></div>`;
  if(sv){grid();track()}else dash();cartUI()}
 function track(){const mine=S.jobs.filter(j=>j.mine);$('#trk').innerHTML=mine.length?mine.map(j=>`<div class="sec"><div class="row"><b>#${j.id} · ${esc(j.t)}</b><span>${fmt(j.pay)}</span></div>
-<div class="steps">${t('st').map((_,i)=>`<i class="${i<=j.st?'d':''}"></i>`).join('')}</div><div><b>${t('st')[j.st]}</b>${j.rej?` <span class="mut">${t('reass')}</span>`:''}</div>
+<div class="steps">${t('st').map((_,i)=>`<i class="${i<=j.st?'d':''}"></i>`).join('')}</div><div><b>${t('st')[j.st]}</b>${j.who?` <span class="mut">👤 ${esc(j.who)}</span>`:''}${j.rej?` <span class="mut">${t('reass')}</span>`:''}</div>
 <div class="mut">${esc(j.loc)} · ${esc(j.slot||'')}</div></div>`).join(''):`<p class="mut">${t('none')}</p>`}
 function dash(){const pj=S.jobs.filter(j=>j.st==0||j.partner===(S.user&&S.user.id));const done=pj.filter(j=>j.st==4).length;$('#dash').innerHTML=`<div class="sec stat"><div><b>${fmt(S.earn)}</b>${t('earn')}</div><div><b>${done}</b>${t('done')}</div><div><b>${pj.length-done}</b>${t('open')}</div></div>
 <h3>${t('jobs')}</h3>`+pj.map(j=>`<div class="sec"><div class="row"><b>${esc(j.t)}</b><span>${fmt(j.pay*.85)}</span></div><div class="mut">📍 ${esc(j.loc)}</div>
@@ -35,7 +35,7 @@ function rej(id){S.hide.push(String(id));S.jobs=S.jobs.filter(x=>x.id!=id);app()
 /* ===== Load orders from the database (RLS decides which rows you may see) ===== */
 async function load(){if(!S.user){S.jobs=[];S.earn=0;return app()}
  const {data,error}=await sb.from('orders').select('*').order('created_at',{ascending:false});if(error){alert(error.message);return}
- S.jobs=data.filter(o=>!S.hide.includes(String(o.id))).map(o=>({id:o.id,mine:o.customer_id===S.user.id,partner:o.partner_id,t:o.title,loc:`${o.address}, ${o.postal} ${o.city}`,slot:`${o.slot} · ${o.pay_method}`,pay:Number(o.subtotal),st:o.status}));
+ S.jobs=data.filter(o=>!S.hide.includes(String(o.id))).map(o=>({id:o.id,mine:o.customer_id===S.user.id,partner:o.partner_id,t:o.title,loc:`${o.address}, ${o.postal} ${o.city}`,slot:`${o.slot} · ${o.pay_method}`,pay:Number(o.subtotal),st:o.status,who:o.assigned_name}));
  S.earn=S.jobs.filter(j=>j.st==4&&j.partner===S.user.id).reduce((s,j)=>s+j.pay*.85,0);app()}
 function add(id){S.cart[id]=(S.cart[id]||0)+1;cartUI();$('#drawer').classList.add('on')}
 function cartUI(){head();const ids=Object.keys(S.cart),c=calc(),d=$('#drawer');
@@ -50,7 +50,7 @@ function qty(id,d){S.cart[id]+=d;if(S.cart[id]<1)delete S.cart[id];app()}
 const modal=h=>{$('#modal').innerHTML=h;$('#ov').classList.add('on')},close=()=>$('#ov').classList.remove('on');
 $('#ov').onclick=e=>{if(e.target.id=='ov')close()};
 function detail(id){const s=SV.find(x=>x[0]==id);modal(`<div class="row"><h2>${s[2]} ${nm(s)}</h2><button class="btn o" onclick="close()">✕</button></div>
-<div class="mut">★ ${s[7]} · ${s[6]} ${t('min')} · ${fmt(price(s))}</div><h4>✔ ${t('inc')}</h4><div>Trained professional · Tools &amp; materials · Cleanup</div><h4>✘ ${t('exc')}</h4><div>Spare parts · Extra rooms</div>
+<div class="mut">★ ${s[7]} · ${s[6]} ${t('min')} · ${fmt(price(s))}</div><h4>✔ ${t('inc')}</h4><div>${esc(s[9]||'Trained professional · Tools & materials · Cleanup')}</div>${s[10]?`<div class="mut">By ${esc(s[10])}</div>`:''}<h4>✘ ${t('exc')}</h4><div>Spare parts · Extra rooms</div>
 <h4>${t('faq')}</h4><div><b>${t('f1')}</b><br>${t('a1')}<br><b>${t('f2')}</b><br>${t('a2')}</div><h4>${t('rev')}</h4><div>★★★★★ “Punctual and tidy.” <span class="mut">Anna, ${R[S.reg].cities[0]}</span><br>★★★★☆ “Great value.” <span class="mut">Omar</span></div>
 <button class="btn" style="margin-top:12px" onclick="add(${id});close()">${t('add')}</button>`)}
 let slot='';
@@ -83,8 +83,13 @@ sb.channel('orders-live').on('postgres_changes',{event:'*',schema:'public',table
 $('#lang').onchange=e=>{S.lang=e.target.value;document.documentElement.lang=S.lang;document.documentElement.dir=S.lang=='ar'?'rtl':'ltr';app()};
 $('#reg').onchange=e=>{S.reg=e.target.value;S.city=0;if(S.reg!='SE')S.rut=false;app()};
 $('#city').onchange=e=>{S.city=+e.target.value;app()};
-$('#role').onclick=()=>{if(S.role=='c'){if(!S.user)return authModal();if(!S.isPartner)return alert('Partner mode is for approved partners. The site owner approves accounts in Supabase.')}S.role=S.role=='c'?'p':'c';app()};
+$('#role').onclick=()=>location.href='partner.html';
 $('#auth').onclick=()=>S.user?sb.auth.signOut():authModal();
 $('#q').oninput=e=>{S.q=e.target.value;if($('#grid'))grid()};
 $('#cartb').onclick=()=>$('#drawer').classList.toggle('on');
 app();
+/* ===== Partner services from the database show for everyone (no login needed) ===== */
+async function loadCatalog(){const {data}=await sb.from('partner_services').select('*');if(!data)return;
+ for(let i=SV.length-1;i>=0;i--)if(SV[i][0]>=1000)SV.splice(i,1);
+ data.forEach(p=>SV.push([1000+p.id,p.category,'🛠️',p.name,p.name,Number(p.price_sek),p.minutes,4.5,0,p.features,p.partner_name]));app()}
+loadCatalog();

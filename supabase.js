@@ -5,3 +5,4 @@
 const SUPABASE_URL = 'https://oufgthwbygtagezgpuoz.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_79AdXXbrNqkeAchAyEkcHQ_6Y1sBFzU';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+if(SUPABASE_URL.includes('YOUR-PROJECT')||SUPABASE_KEY.includes('YOUR_KEY'))alert('Open supabase.js and paste your Project URL and Publishable key.');
