@@ -1,6 +1,8 @@
 # HemFix: Home Services Marketplace
 
 A free, Urban Company style marketplace for home services, built for Sweden and ready to grow across Europe. Customers book services, partners sell services and manage a team, and assigned workers share their live location. Everything runs on free tools, with no server to maintain.
+https://sunilsah0.github.io/hemfix/
+
 
 > **Status:** demo-ready. Payments (Swish, Klarna, card) are still simulated. See [Roadmap](#roadmap).
 
